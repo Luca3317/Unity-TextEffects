@@ -6,7 +6,7 @@ namespace TMPEffects.Databases
 {
     public interface ITMPEffectDatabase
     {
-        public bool Contains(string name);
+        public bool ContainsEffect(string name);
     }
 
     public interface ITMPEffectDatabase<T> : ITMPEffectDatabase

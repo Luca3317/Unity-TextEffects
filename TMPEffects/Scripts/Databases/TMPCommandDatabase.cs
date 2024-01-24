@@ -12,7 +12,7 @@ namespace TMPEffects.Databases
         [SerializedDictionary(keyName: "Tag Name", valueName: "Command")]
         [SerializeField] SerializedDictionary<string, TMPCommand> commandDict;
 
-        public override bool Contains(string name)
+        public override bool ContainsEffect(string name)
         {
             return commandDict.ContainsKey(name);
         }

@@ -1,46 +1,80 @@
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Security.Cryptography;
 using UnityEngine;
 
 namespace TMPEffects.Tags
 {
-    public abstract class TMPEffectTag
+    public sealed class EffectTag 
     {
-        public string name { get; private set; }
-        public int startIndex { get; private set; }
-        public int endIndex { get; private set; }
-        internal int orderAtIndex { get; private set; }
+        public EffectTagData Data => data;
+        public EffectTagIndices Indices => indices;
 
-        public int length => endIndex == -1 ? -1 : (endIndex - startIndex) + 1;
-        public Dictionary<string, string> parameters { get; private set; }
+        public int StartIndex => indices.StartIndex;
+        public int EndIndex => indices.EndIndex;
+        public int OrderAtIndex => indices.OrderAtIndex;
 
-        private int nameHashCode;
+        public bool IsOpen => indices.IsOpen;
+        public int Length => indices.Length;
 
-        public TMPEffectTag(string name, int startIndex, int orderAtIndex, Dictionary<string, string> parameters)
+        public string Name => data.Name;
+        public char Prefix => data.Prefix;
+        public ReadOnlyDictionary<string, string> Parameters => data.Parameters;
+
+        private readonly EffectTagData data;
+        private readonly EffectTagIndices indices;
+
+        internal void SetStartIndex(int newIndex) => indices.SetStartIndex(newIndex);
+        internal void SetEndIndex(int newIndex) => indices.SetEndIndex(newIndex);
+        internal void SetOrderAtIndex(int newIndex) => indices.SetOrderAtIndex(newIndex);
+
+        public EffectTag(EffectTagData data, EffectTagIndices indices)
+        {
+            this.data = data;
+            this.indices = indices;
+        }
+    }
+
+    public sealed class EffectTagData
+    {
+        public string Name => name;
+        public char Prefix => prefix;
+        public ReadOnlyDictionary<string, string> Parameters => parameters;
+
+        private readonly string name;
+        private readonly char prefix;
+        private readonly ReadOnlyDictionary<string, string> parameters;
+
+        public EffectTagData(string name, char prefix, IDictionary<string, string> parameters)
         {
             this.name = name;
-            this.startIndex = startIndex;
-            this.parameters = parameters;
-            this.orderAtIndex = orderAtIndex;
-            endIndex = -1;
-            nameHashCode = name.GetHashCode();
+            this.prefix = prefix;
+            this.parameters = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(parameters));
         }
+    }
 
-        public void Close(int endIndex)
+    public sealed class EffectTagIndices 
+    {
+        public int StartIndex => startIndex;
+        public int EndIndex => endIndex;
+        public int OrderAtIndex => orderAtIndex;
+
+        public bool IsOpen => endIndex == -1;
+        public int Length => IsOpen ? endIndex : endIndex - startIndex + 1;
+
+        private int startIndex;
+        private int endIndex;
+        private int orderAtIndex;
+
+        internal void SetStartIndex(int newIndex) => startIndex = newIndex;
+        internal void SetEndIndex(int newIndex) => endIndex = newIndex;
+        internal void SetOrderAtIndex(int newIndex) => orderAtIndex = newIndex;
+
+        public EffectTagIndices(int startIndex, int endIndex, int orderAtIndex)
         {
-            //if (!IsOpen) throw new System.InvalidOperationException();
+            this.startIndex = startIndex;
             this.endIndex = endIndex;
+            this.orderAtIndex = orderAtIndex;
         }
-
-        public void SetStartIndex(int startIndex)
-        {
-            this.startIndex = startIndex;
-        }
-        public void SetEndIndex(int endIndex) 
-        {
-            this.endIndex = endIndex; 
-        }
-
-        public bool IsOpen => length == -1;
-        public bool IsEqual(string name) => nameHashCode == name.GetHashCode();
     }
 }

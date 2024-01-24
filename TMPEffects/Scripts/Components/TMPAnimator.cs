@@ -12,6 +12,8 @@ using System;
 using TMPEffects.Extensions;
 using PlasticGui.Gluon.WorkspaceWindow;
 using System.Xml.Serialization;
+using Palmmedia.ReportGenerator.Core.Parser.Analysis;
+using Unity.VisualScripting.YamlDotNet.Core.Tokens;
 
 namespace TMPEffects.Components
 {
@@ -713,14 +715,14 @@ namespace TMPEffects.Components
         private bool ValidateAnimationTag<T>(string tag, ParsingUtility.TagInfo tagInfo, TMPEffectDatabase<T> database, out Dictionary<string, string> parametersOut) where T : ITMPAnimation
         {
             parametersOut = null;
-            if (!database.Contains(tagInfo.name)) return false;
+            if (!database.ContainsEffect(tagInfo.name)) return false;
             parametersOut = ParsingUtility.GetTagParametersDict(tag);
             if (!database.GetEffect(tagInfo.name).ValidateParameters(parametersOut)) return false;
             return true;
         }
         private bool ValidateAnimationTag<T>(string key, Dictionary<string, string> parameters, TMPEffectDatabase<T> database) where T : ITMPAnimation
         {
-            if (!database.Contains(key)) return false;
+            if (!database.ContainsEffect(key)) return false;
             if (!database.GetEffect(key).ValidateParameters(parameters)) return false;
             return true;
         }
@@ -1219,7 +1221,7 @@ namespace TMPEffects.Components
             string str = defaultShowString;
             str = (str.Trim()[0] == '<' ? str : "<" + str + ">");
             if (!ParsingUtility.TryParseTag(str, 0, str.Length - 1, ref tagInfo, ParsingUtility.TagType.Open)) return "Not a wellformed tag";
-            if (!database.showAnimationDatabase.Contains(tagInfo.name)) return "Tag not contained within show database";
+            if (!database.showAnimationDatabase.ContainsEffect(tagInfo.name)) return "Tag not contained within show database";
 
             if ((animation = database.showAnimationDatabase.GetEffect(tagInfo.name)) == null) return "Tag is valid but is not assigned an animation object within the show database";
 
@@ -1242,7 +1244,7 @@ namespace TMPEffects.Components
             string str = defaultHideString;
             str = (str.Trim()[0] == '<' ? str : "<" + str + ">");
             if (!ParsingUtility.TryParseTag(str, 0, str.Length - 1, ref tagInfo, ParsingUtility.TagType.Open)) return "Not a wellformed tag";
-            if (!database.showAnimationDatabase.Contains(tagInfo.name)) return "Tag not contained within hide database";
+            if (!database.showAnimationDatabase.ContainsEffect(tagInfo.name)) return "Tag not contained within hide database";
 
             if ((animation = database.showAnimationDatabase.GetEffect(tagInfo.name)) == null) return "Tag is valid but is not assigned an animation object within the hide database";
 
@@ -1412,7 +1414,7 @@ namespace TMPEffects.Components
 
             if (string.IsNullOrWhiteSpace(str)) return false;
             str = (str.Trim()[0] == '<' ? str : "<" + str + ">");
-            if (!ParsingUtility.TryParseTag(str, 0, str.Length - 1, ref tagInfo, ParsingUtility.TagType.Open) || !database.Contains(tagInfo.name)) return false;
+            if (!ParsingUtility.TryParseTag(str, 0, str.Length - 1, ref tagInfo, ParsingUtility.TagType.Open) || !database.ContainsEffect(tagInfo.name)) return false;
 
             if ((animation = database.GetEffect(tagInfo.name, type)) == null)
             {

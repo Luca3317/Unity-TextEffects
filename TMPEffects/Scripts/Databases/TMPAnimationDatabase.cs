@@ -18,19 +18,19 @@ namespace TMPEffects.Databases
         {
             switch (type)
             {
-                case TMPAnimationType.Basic: return basicAnimationDatabase.Contains(name);
-                case TMPAnimationType.Show: return showAnimationDatabase.Contains(name);
-                case TMPAnimationType.Hide: return hideAnimationDatabase.Contains(name);
+                case TMPAnimationType.Basic: return basicAnimationDatabase.ContainsEffect(name);
+                case TMPAnimationType.Show: return showAnimationDatabase.ContainsEffect(name);
+                case TMPAnimationType.Hide: return hideAnimationDatabase.ContainsEffect(name);
             }
 
             throw new System.ArgumentException(nameof(type));
         }
 
-        public override bool Contains(string name)
+        public override bool ContainsEffect(string name)
         {
-            if (basicAnimationDatabase.Contains(name)) return true;
-            if (showAnimationDatabase.Contains(name)) return true;
-            if (hideAnimationDatabase.Contains(name)) return true;
+            if (basicAnimationDatabase.ContainsEffect(name)) return true;
+            if (showAnimationDatabase.ContainsEffect(name)) return true;
+            if (hideAnimationDatabase.ContainsEffect(name)) return true;
             return false;
         }
 
@@ -48,9 +48,9 @@ namespace TMPEffects.Databases
 
         public override ITMPAnimation GetEffect(string name)
         {
-            if (basicAnimationDatabase.Contains(name)) return basicAnimationDatabase.GetEffect(name);
-            if (showAnimationDatabase.Contains(name)) return showAnimationDatabase.GetEffect(name);
-            if (hideAnimationDatabase.Contains(name)) return hideAnimationDatabase.GetEffect(name);
+            if (basicAnimationDatabase.ContainsEffect(name)) return basicAnimationDatabase.GetEffect(name);
+            if (showAnimationDatabase.ContainsEffect(name)) return showAnimationDatabase.GetEffect(name);
+            if (hideAnimationDatabase.ContainsEffect(name)) return hideAnimationDatabase.GetEffect(name);
             throw new KeyNotFoundException();
         }
     }

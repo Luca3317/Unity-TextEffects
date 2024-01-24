@@ -3,20 +3,28 @@ using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
-using TMPEffects.TextProcessing.TagProcessors;
 using TMPEffects.Tags;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Collections.Specialized;
+using System.Collections;
 
 namespace TMPEffects.TextProcessing
 {
-    internal class TMPTextProcessor : ITextPreprocessor
+    internal class TMPTextProcessor : ITextPreprocessor, ITagProcessorManager
     {
         public TMP_Text TextComponent { get; private set; }
 
-        public Dictionary<char, ITagProcessor> TagProcessors => new(tagProcessors);
-        Dictionary<char, ITagProcessor> tagProcessors;
+        public ReadOnlyDictionary<char, ReadOnlyCollection<TagProcessor>> TagProcessors => ((ITagProcessorManager)processors).TagProcessors;
+
+        //private Dictionary<char, List<TagProcessor>> tagProcessors;
+        //private Dictionary<char, ReadOnlyCollection<TagProcessor>> tagProcessorsRO;
+        //public ReadOnlyDictionary<char, ReadOnlyCollection<TagProcessor>> TagProcessors { get; private set; }
+
+        private TagProcessorManager processors;
 
         private StringBuilder sb;
-        private Dictionary<TMPEffectTag, Indeces> newIndeces = new();
+        private Dictionary<EffectTag, Indices> newIndeces = new();
         private Stack<TMP_Style> styles = new();
 
         public delegate void TMPTextProcessorEventHandler(string text);
@@ -24,36 +32,24 @@ namespace TMPEffects.TextProcessing
         public event TMPTextProcessorEventHandler FinishPreProcess;
         public event TMPTextProcessorEventHandler BeginAdjustIndeces;
         public event TMPTextProcessorEventHandler FinishAdjustIndeces;
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
+        public event NotifyProcessorsChangedEventHandler ProcessorsChanged;
+
+        // TODO there should likely be events for processor registered / unregistered
 
         public TMPTextProcessor(TMP_Text text)
         {
             sb = new StringBuilder();
-            tagProcessors = new();
-            this.TextComponent = text;
+            processors = new TagProcessorManager();
+            processors.ProcessorsChanged += (_, args) => ProcessorsChanged(this, args);
+
+            TextComponent = text;
         }
 
-        public void RegisterProcessor<T>(char prefix, ITagProcessor<T> preprocessor) where T : TMPEffectTag
-        {
-            if (preprocessor == null)
-            {
-                throw new System.ArgumentNullException(nameof(preprocessor));
-            }
-
-            if (tagProcessors.ContainsKey(prefix))
-            {
-                return;
-            }
-            tagProcessors.Add(prefix, preprocessor);
-        }
-
-        public void UnregisterProcessor(char prefix)
-        {
-            if (!tagProcessors.ContainsKey(prefix))
-            {
-                return;
-            }
-            tagProcessors.Remove(prefix);
-        }
+        public void RegisterProcessor(char prefix, TagProcessor processor, int priority = 0) => processors.RegisterProcessor(prefix, processor, priority);
+        public bool UnregisterProcessor(char prefix, TagProcessor processor) => processors.UnregisterProcessor(prefix, processor);
+        public IEnumerator<TagProcessor> GetEnumerator() => processors.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => processors.GetEnumerator();
 
         /// <summary>
         /// Preprocess the text.<br/>
@@ -67,9 +63,9 @@ namespace TMPEffects.TextProcessing
             BeginPreProcess?.Invoke(text);
 
             styles.Clear();
-            foreach (var key in tagProcessors.Keys)
+            foreach (var processor in processors)
             {
-                tagProcessors[key].Reset();
+                processor.Reset();
             }
 
             // Indicates the order of the parsed tags at the respective index
@@ -197,12 +193,12 @@ namespace TMPEffects.TextProcessing
             return parsed;
         }
 
-        private class Indeces
+        private class Indices
         {
             public int start;
             public int end;
 
-            public Indeces(int start, int end)
+            public Indices(int start, int end)
             {
                 this.start = start;
                 this.end = end;
@@ -214,14 +210,15 @@ namespace TMPEffects.TextProcessing
         /// to text removed and inserted by TextMeshPro.
         /// </summary>
         /// <param name="info"></param>
-        public void AdjustIndeces(TMP_TextInfo info)
+        public void AdjustIndices(TMP_TextInfo info)
         {
             BeginAdjustIndeces?.Invoke(info.textComponent.text);
 
             newIndeces.Clear();
-            foreach (var processor in tagProcessors.Values)
+
+            foreach (var processor in processors)
                 foreach (var tag in processor.ProcessedTags)
-                    newIndeces.Add(tag, new Indeces(tag.startIndex, tag.endIndex));
+                    newIndeces.Add(tag, new Indices(tag.StartIndex, tag.EndIndex));
 
             int lastIndex = -1;
 
@@ -244,17 +241,17 @@ namespace TMPEffects.TextProcessing
                         {
                             if (kvp.Key.IsOpen)
                             {
-                                if (kvp.Key.startIndex >= lastIndex)
+                                if (kvp.Key.StartIndex >= lastIndex)
                                 {
                                     kvp.Value.start += insertedCharacters;
                                 }
                             }
                             else
                             {
-                                if (kvp.Key.endIndex < lastIndex) continue;
+                                if (kvp.Key.EndIndex < lastIndex) continue;
 
                                 // If tag begins after inserted text
-                                if (kvp.Key.startIndex >= lastIndex)
+                                if (kvp.Key.StartIndex >= lastIndex)
                                 {
                                     kvp.Value.start += insertedCharacters;
                                 }
@@ -272,17 +269,17 @@ namespace TMPEffects.TextProcessing
 
                             if (kvp.Key.IsOpen)
                             {
-                                if (kvp.Key.startIndex > lastIndex + 1)
+                                if (kvp.Key.StartIndex > lastIndex + 1)
                                 {
                                     kvp.Value.start -= diff;
                                 }
                             }
                             else
                             {
-                                if (kvp.Key.endIndex <= lastIndex) continue;
+                                if (kvp.Key.EndIndex <= lastIndex) continue;
 
                                 // If tag begins after inserted text
-                                if (kvp.Key.startIndex > lastIndex + 1)
+                                if (kvp.Key.StartIndex > lastIndex + 1)
                                 {
                                     kvp.Value.start -= diff;
                                 }
@@ -311,9 +308,17 @@ namespace TMPEffects.TextProcessing
 
         private bool HandleTag(ref ParsingUtility.TagInfo tagInfo, int textIndex, int order)
         {
-            if (tagProcessors.ContainsKey(tagInfo.prefix))
+            ReadOnlyCollection<TagProcessor> coll;
+            if (!processors.TagProcessors.TryGetValue(tagInfo.prefix, out coll))
+                return false;
+
+            if (coll.Count == 1)
+                return coll[0].Process(tagInfo, textIndex, order);
+
+            for (int i = 0; i < coll.Count; i++)
             {
-                return tagProcessors[tagInfo.prefix].Process(tagInfo, textIndex, order);
+                if (coll[i].Process(tagInfo, textIndex, order))
+                    return true;
             }
 
             return false;

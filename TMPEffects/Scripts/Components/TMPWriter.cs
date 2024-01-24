@@ -502,14 +502,14 @@ namespace TMPEffects.Components
         private bool ValidateCommandTag(string tag, ParsingUtility.TagInfo tagInfo, out Dictionary<string, string> parametersOut)
         {
             parametersOut = null;
-            if (!database.Contains(tagInfo.name)) return false;
+            if (!database.ContainsEffect(tagInfo.name)) return false;
             parametersOut = ParsingUtility.GetTagParametersDict(tag);
             if (!database.GetEffect(tagInfo.name).ValidateParameters(parametersOut)) return false;
             return true;
         }
         private bool ValidateCommandTag(string key, Dictionary<string, string> parameters)
         {
-            if (!database.Contains(key)) return false;
+            if (!database.ContainsEffect(key)) return false;
             if (!database.GetEffect(key).ValidateParameters(parameters)) return false;
             return true;
         }

@@ -13,7 +13,7 @@ namespace TMPEffects.Databases
         [SerializedDictionary(keyName: "Tag Name", valueName: "Animation")]
         [SerializeField] SerializedDictionary<string, TMPAnimation> animations;
 
-        public override bool Contains(string name)
+        public override bool ContainsEffect(string name)
         {
             return animations.ContainsKey(name);
         }
