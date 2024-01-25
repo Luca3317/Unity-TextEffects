@@ -84,8 +84,10 @@ public interface ITMPAnimator
 }
 
 
-public class TMPAnimatorNew : ITMPAnimator, IReadOnlyTagManager<TMPAnimationCategory>
+public class TMPAnimatorNew : ITMPAnimator
 {
+    public ITagManager<TMPAnimationCategory> Tags => tags;
+
     private ITMPAnimator impl;
     private AnimationTagManager tags;
     private ITagProcessorManager processors;
@@ -102,26 +104,26 @@ public class TMPAnimatorNew : ITMPAnimator, IReadOnlyTagManager<TMPAnimationCate
     public void UpdateAnimations(float deltaTime) => impl.UpdateAnimations(deltaTime);
     #endregion
 
-    #region ITagManager delegation
-    public int TagCount => tags.TagCount;
-    public IEnumerable<EffectTag> Tags => tags.Tags;
-    public IEnumerable<TMPAnimationCategory> Keys => tags.Keys;
-    public int KeyCount => tags.KeyCount;
-    public bool TryAdd(EffectTag tag) => tags.TryAdd(tag);
-    public int RemoveAllAt(int startIndex, EffectTag[] buffer = null, int bufferIndex = 0) => tags.RemoveAllAt(startIndex, buffer, bufferIndex);
-    public bool RemoveAt(int startIndex, int? order = null) => tags.RemoveAt(startIndex, order);
-    public void Clear() => tags.Clear();
-    public bool Contains(EffectTag item) => tags.Contains(item);
-    public void CopyTo(EffectTag[] array, int arrayIndex) => tags.CopyTo(array, arrayIndex);
-    public bool Remove(EffectTag item) => tags.Remove(item);
-    public int TagsAt(int startIndex, EffectTag[] buffer, int bufferIndex = 0) => tags.TagsAt(startIndex, buffer, bufferIndex);
-    public IEnumerable<EffectTag> TagsAt(int startIndex) => tags.TagsAt(startIndex);
-    public EffectTag TagAt(int startIndex, int? order = null) => tags.TagAt(startIndex, order);
-    public IEnumerator<EffectTag> GetEnumerator() => tags.GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => tags.GetEnumerator();
-    public IReadOnlyTagCollection TagsFor(TMPAnimationCategory key) => tags.TagsFor(key);
-    public bool ContainsKey(TMPAnimationCategory key) => tags.ContainsKey(key);
-    #endregion
+    //#region ITagManager delegation
+    //public int TagCount => tags.TagCount;
+    //public IEnumerable<EffectTag> Tags => tags.Tags;
+    //public IEnumerable<TMPAnimationCategory> Keys => tags.Keys;
+    //public int KeyCount => tags.KeyCount;
+    //public bool TryAdd(EffectTag tag) => tags.TryAdd(tag);
+    //public int RemoveAllAt(int startIndex, EffectTag[] buffer = null, int bufferIndex = 0) => tags.RemoveAllAt(startIndex, buffer, bufferIndex);
+    //public bool RemoveAt(int startIndex, int? order = null) => tags.RemoveAt(startIndex, order);
+    //public void Clear() => tags.Clear();
+    //public bool Contains(EffectTag item) => tags.Contains(item);
+    //public void CopyTo(EffectTag[] array, int arrayIndex) => tags.CopyTo(array, arrayIndex);
+    //public bool Remove(EffectTag item) => tags.Remove(item);
+    //public int TagsAt(int startIndex, EffectTag[] buffer, int bufferIndex = 0) => tags.TagsAt(startIndex, buffer, bufferIndex);
+    //public IEnumerable<EffectTag> TagsAt(int startIndex) => tags.TagsAt(startIndex);
+    //public EffectTag TagAt(int startIndex, int? order = null) => tags.TagAt(startIndex, order);
+    //public IEnumerator<EffectTag> GetEnumerator() => tags.GetEnumerator();
+    //IEnumerator IEnumerable.GetEnumerator() => tags.GetEnumerator();
+    //public IReadOnlyTagCollection TagsFor(TMPAnimationCategory key) => tags.TagsFor(key);
+    //public bool ContainsKey(TMPAnimationCategory key) => tags.ContainsKey(key);
+    //#endregion
 
     private class AnimationTagManager : TagManager<TMPAnimationCategory, CachedAnimation> { }
 }
