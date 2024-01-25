@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Security.Cryptography;
@@ -5,7 +7,7 @@ using UnityEngine;
 
 namespace TMPEffects.Tags
 {
-    public sealed class EffectTag 
+    public sealed class EffectTag : IEffectTagIndices
     {
         public EffectTagData Data => data;
         public EffectTagIndices Indices => indices;
@@ -24,15 +26,16 @@ namespace TMPEffects.Tags
         private readonly EffectTagData data;
         private readonly EffectTagIndices indices;
 
-        internal void SetStartIndex(int newIndex) => indices.SetStartIndex(newIndex);
-        internal void SetEndIndex(int newIndex) => indices.SetEndIndex(newIndex);
-        internal void SetOrderAtIndex(int newIndex) => indices.SetOrderAtIndex(newIndex);
-
         public EffectTag(EffectTagData data, EffectTagIndices indices)
         {
             this.data = data;
             this.indices = indices;
         }
+
+        public int CompareTo(IEffectTagIndices other) => indices.CompareTo(other);
+        internal void SetStartIndex(int newIndex) => indices.SetStartIndex(newIndex);
+        internal void SetEndIndex(int newIndex) => indices.SetEndIndex(newIndex);
+        internal void SetOrderAtIndex(int newIndex) => indices.SetOrderAtIndex(newIndex);
     }
 
     public sealed class EffectTagData
@@ -53,7 +56,7 @@ namespace TMPEffects.Tags
         }
     }
 
-    public sealed class EffectTagIndices 
+    public sealed class EffectTagIndices : IEffectTagIndices
     {
         public int StartIndex => startIndex;
         public int EndIndex => endIndex;
@@ -66,15 +69,34 @@ namespace TMPEffects.Tags
         private int endIndex;
         private int orderAtIndex;
 
-        internal void SetStartIndex(int newIndex) => startIndex = newIndex;
-        internal void SetEndIndex(int newIndex) => endIndex = newIndex;
-        internal void SetOrderAtIndex(int newIndex) => orderAtIndex = newIndex;
-
         public EffectTagIndices(int startIndex, int endIndex, int orderAtIndex)
         {
             this.startIndex = startIndex;
             this.endIndex = endIndex;
             this.orderAtIndex = orderAtIndex;
+        }
+
+        public int CompareTo(IEffectTagIndices other)=> CompareTo(other);
+
+        internal void SetStartIndex(int newIndex) => startIndex = newIndex;
+        internal void SetEndIndex(int newIndex) => endIndex = newIndex;
+        internal void SetOrderAtIndex(int newIndex) => orderAtIndex = newIndex;
+    }
+
+    public interface IEffectTagIndices : IComparable<IEffectTagIndices>
+    {
+        public int StartIndex { get; }
+        public int EndIndex { get; }
+        public int OrderAtIndex { get; }
+
+        public bool IsOpen { get; }
+        public int Length { get; }
+
+        int IComparable<IEffectTagIndices>.CompareTo(IEffectTagIndices other)
+        {
+            int res = StartIndex.CompareTo(other.StartIndex);
+            if (res == 0) return OrderAtIndex.CompareTo(other.OrderAtIndex);
+            return res;
         }
     }
 }
