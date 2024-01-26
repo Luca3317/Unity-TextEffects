@@ -12,21 +12,49 @@ using UnityEngine.UIElements;
 using Unity.Plastic.Newtonsoft.Json.Linq;
 using Codice.CM.Common;
 using System.ComponentModel;
+using UnityEditor.ShaderKeywordFilter;
 
 namespace TMPEffects.Tags
 {
+    public class ObservableTagCollection
+    {
+        private ObservableList<EffectTag> list;
+
+        internal ObservableTagCollection(ObservableList<EffectTag> list)
+        {
+            this.list = list;
+        }
+        public ObservableTagCollection()
+        {
+            this.list = new ObservableList<EffectTag>();
+        }
+    }
+
+
+    public class ObservableReadOnlyTagCollection
+    {
+        public ObservableReadOnlyTagCollection(ObservableTagCollection tagCollection) 
+        {
+
+        }
+    }
+
+
+
+
+
     /// <summary>
     /// A writable collection of <see cref="ITagWrapper"/>.
     /// </summary>
     /// <typeparam name="T">The type of the TagWrapper</typeparam>
-    public class TagCollection<T> : ITagCollection, ICachedTagCollection<T> where T : ITagWrapper
+    public class TagCollection<T> : ITagCollection, ITagCollection<T> where T : ITagWrapper
     {
-        private ICachedTagCollection<T> collection;
+        private ITagCollection<T> collection;
 
         public int TagCount => collection.TagCount;
         public IEnumerable<EffectTag> Tags => collection.Tags;
 
-        public TagCollection(ICachedTagCollection<T> collection)
+        public TagCollection(ITagCollection<T> collection)
         {
             this.collection = collection;
         }
@@ -45,6 +73,7 @@ namespace TMPEffects.Tags
         public T GetCached(EffectTag tag) => collection.GetCached(tag);
 
         public bool TryAdd(EffectTag tag) => collection.TryAdd(tag);
+        public bool TryAdd(EffectTagData data, int startIndex = 0, int endIndex = -1, int? orderAtIndex = null) => collection.TryAdd(data, startIndex, endIndex, orderAtIndex);
         public int RemoveAllAt(int startIndex, EffectTag[] buffer = null, int bufferIndex = 0) => collection.RemoveAllAt(startIndex, buffer, bufferIndex);
         public bool RemoveAt(int startIndex, int? order = null) => collection.RemoveAt(startIndex, order);
         public void Clear() => collection.Clear();
@@ -82,6 +111,7 @@ namespace TMPEffects.Tags
         }
 
         public bool TryAdd(EffectTag tag) => collection.TryAdd(tag);
+        public bool TryAdd(EffectTagData data, int startIndex = 0, int endIndex = -1, int? orderAtIndex = null) => collection.TryAdd(data, startIndex, endIndex, orderAtIndex);
         public int RemoveAllAt(int startIndex, EffectTag[] buffer = null, int bufferIndex = 0) => collection.RemoveAllAt(startIndex, buffer, bufferIndex);
         public bool RemoveAt(int startIndex, int? order = null) => collection.RemoveAt(startIndex, order);
         public void Clear() => collection.Clear();
@@ -95,7 +125,7 @@ namespace TMPEffects.Tags
         IEnumerator IEnumerable.GetEnumerator() => collection.GetEnumerator();
     }
 
-    internal class TagCollectionIMPL<T> : TagCollectionIMPL_Base<T>, ICachedTagCollection<T> where T : ITagWrapper
+    internal class TagCollectionIMPL<T> : TagCollectionIMPL_Base<T>, ITagCollection<T> where T : ITagWrapper
     {
         private ITagCacher<T> cacher;
 
@@ -135,6 +165,11 @@ namespace TMPEffects.Tags
 
             tags.Insert(i, t);
             return true;
+        }
+
+        public override bool TryAdd(EffectTagData data, int startIndex = 0, int endIndex = -1, int? orderAtIndex = null)
+        {
+            throw new NotImplementedException();
         }
 
         protected override EffectTag Tag(int i) => tags[i].Tag;
@@ -202,6 +237,11 @@ namespace TMPEffects.Tags
             throw new NotImplementedException();
         }
 
+        public override bool TryAdd(EffectTagData data, int startIndex = 0, int endIndex = -1, int? orderAtIndex = null)
+        {
+            throw new NotImplementedException();
+        }
+
         // TODO Does unity c# compiler support devirtualization?
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override EffectTag Tag(int i) => tags[i];
@@ -210,16 +250,13 @@ namespace TMPEffects.Tags
     internal abstract class TagCollectionIMPL_Base<T> : ReadOnlyTagCollectionIMPL_Base<T>, ITagCollection
     {
         public abstract bool TryAdd(EffectTag tag);
+        public abstract bool TryAdd(EffectTagData data, int startIndex = 0, int endIndex = -1, int? orderAtIndex = null);
+        protected NotifyCollectionChangedEventHandler onChanged;
 
         public TagCollectionIMPL_Base(IList<T> tags) : base(tags)
         { }
         public TagCollectionIMPL_Base() : base()
         { }
-
-        public void Clear()
-        {
-            tags.Clear();
-        }
 
         public void CopyTo(EffectTag[] array, int arrayIndex)
         {
@@ -233,9 +270,14 @@ namespace TMPEffects.Tags
             }
         }
 
+        public void Clear()
+        {
+            tags.Clear();
+        }
+
         public bool Remove(EffectTag tag)
         {
-            int index = BinarySearchIndexOf(tag);
+            int index = BinarySearchIndexOf(new TempIndices(tag.StartIndex, tag.OrderAtIndex));
             if (index < 0) return false;
             tags.RemoveAt(index);
             return true;
@@ -293,14 +335,14 @@ namespace TMPEffects.Tags
     }
 
 
-    public class ReadOnlyTagCollection<T> : IReadOnlyTagCollection, IReadOnlyCachedTagCollection<T> where T : ITagWrapper
+    public class ReadOnlyTagCollection<T> : IReadOnlyTagCollection, IReadOnlyTagCollection<T> where T : ITagWrapper
     {
-        private IReadOnlyCachedTagCollection<T> collection;
+        private IReadOnlyTagCollection<T> collection;
 
         public int TagCount => collection.TagCount;
         public IEnumerable<EffectTag> Tags => collection.Tags;
 
-        public ReadOnlyTagCollection(ICachedTagCollection<T> collection)
+        public ReadOnlyTagCollection(ITagCollection<T> collection)
         {
             this.collection = collection;
         }
@@ -355,7 +397,7 @@ namespace TMPEffects.Tags
         IEnumerator IEnumerable.GetEnumerator() => collection.GetEnumerator();
     }
 
-    internal class ReadOnlyTagCollectionIMPL<T> : ReadOnlyTagCollectionIMPL_Base<T>, IReadOnlyCachedTagCollection<T> where T : ITagWrapper
+    internal class ReadOnlyTagCollectionIMPL<T> : ReadOnlyTagCollectionIMPL_Base<T>, IReadOnlyTagCollection<T> where T : ITagWrapper
     {
         public ReadOnlyTagCollectionIMPL() : base()
         { }
@@ -454,8 +496,9 @@ namespace TMPEffects.Tags
 
         public bool Contains(EffectTag tag)
         {
-            int index = BinarySearchIndexOf(tag);
+            int index = BinarySearchIndexOf(new TempIndices(tag.StartIndex, tag.OrderAtIndex));
             if (index < 0) return false;
+            if (Tag(index) != tag) return false;
             return true;
         }
 
@@ -520,7 +563,7 @@ namespace TMPEffects.Tags
             return GetEnumerator();
         }
 
-        protected int BinarySearchIndexOf(IEffectTagIndices indices)
+        protected int BinarySearchIndexOf(IComparable<EffectTag> indices)
         {
             int lower = 0;
             int upper = tags.Count - 1;
@@ -540,15 +583,8 @@ namespace TMPEffects.Tags
             return ~lower;
         }
 
-        protected struct TempIndices : IEffectTagIndices
+        protected struct TempIndices : IComparable<EffectTag>
         {
-            public int StartIndex => startIndex;
-            public int OrderAtIndex => orderAtIndex;
-
-            public int EndIndex => throw new NotImplementedException();
-            public bool IsOpen => throw new NotImplementedException();
-            public int Length => throw new NotImplementedException();
-
             private readonly int startIndex;
             private readonly int orderAtIndex;
 
@@ -557,17 +593,17 @@ namespace TMPEffects.Tags
                 this.startIndex = startIndex;
                 this.orderAtIndex = orderAtIndex;
             }
+
+            public int CompareTo(EffectTag other)
+            {
+                int res = startIndex.CompareTo(other.StartIndex);
+                if (res == 0) return orderAtIndex.CompareTo(other.OrderAtIndex);
+                return res;
+            }
         }
 
-        protected struct StartIndexOnly : IEffectTagIndices
+        protected struct StartIndexOnly : IComparable<EffectTag>
         {
-            public int StartIndex => startIndex;
-
-            public int EndIndex => throw new NotImplementedException();
-            public int OrderAtIndex => throw new NotImplementedException();
-            public bool IsOpen => throw new NotImplementedException();
-            public int Length => throw new NotImplementedException();
-
             private readonly int startIndex;
 
             public StartIndexOnly(int startIndex)
@@ -575,19 +611,21 @@ namespace TMPEffects.Tags
                 this.startIndex = startIndex;
             }
 
-            public int CompareTo(IEffectTagIndices other)
+            public int CompareTo(EffectTag other)
             {
-                return StartIndex.CompareTo(other.StartIndex);
+                return startIndex.CompareTo(other.StartIndex);
             }
         }
+
     }
 
 
+    // TODO Potentially remove anything like this; decouple cacher and collection
     /// <summary>
     /// A writable collection of <see cref="ITagWrapper"/>.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface ICachedTagCollection<out T> : ITagCollection, IReadOnlyCachedTagCollection<T> where T : ITagWrapper
+    public interface ITagCollection<out T> : ITagCollection, IReadOnlyTagCollection<T> where T : ITagWrapper
     {
 
     }
@@ -596,7 +634,7 @@ namespace TMPEffects.Tags
     /// A readonly collection of <see cref="ITagWrapper"/>.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IReadOnlyCachedTagCollection<out T> : IReadOnlyTagCollection where T : ITagWrapper
+    public interface IReadOnlyTagCollection<out T> : IReadOnlyTagCollection where T : ITagWrapper
     {
         public IEnumerable<T> GetCached();
         public IEnumerable<T> GetCached(int index);
@@ -604,12 +642,16 @@ namespace TMPEffects.Tags
         public T GetCached(EffectTag tag);
     }
 
+
+
+
     /// <summary>
     /// A writable collection of tags.
     /// </summary>
     public interface ITagCollection : ICollection<EffectTag>, IReadOnlyTagCollection
     {
         public bool TryAdd(EffectTag tag);
+        public bool TryAdd(EffectTagData data, int startIndex = 0, int endIndex = -1, int? orderAtIndex = null);
 
         public int RemoveAllAt(int startIndex, EffectTag[] buffer = null, int bufferIndex = 0);
         public bool RemoveAt(int startIndex, int? order = null);

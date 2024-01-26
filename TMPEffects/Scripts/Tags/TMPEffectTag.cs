@@ -7,7 +7,17 @@ using UnityEngine;
 
 namespace TMPEffects.Tags
 {
-    public sealed class EffectTag : IEffectTagIndices
+    public class EffectTagComparer : IComparer<EffectTag>
+    {
+        public int Compare(EffectTag x, EffectTag y)
+        {
+            int res = x.StartIndex.CompareTo(y.StartIndex);
+            if (res == 0) return x.OrderAtIndex.CompareTo(y.OrderAtIndex);
+            return res;
+        }
+    }
+
+    public sealed class EffectTag
     {
         public EffectTagData Data => data;
         public EffectTagIndices Indices => indices;
@@ -32,7 +42,6 @@ namespace TMPEffects.Tags
             this.indices = indices;
         }
 
-        public int CompareTo(IEffectTagIndices other) => indices.CompareTo(other);
         internal void SetStartIndex(int newIndex) => indices.SetStartIndex(newIndex);
         internal void SetEndIndex(int newIndex) => indices.SetEndIndex(newIndex);
         internal void SetOrderAtIndex(int newIndex) => indices.SetOrderAtIndex(newIndex);
@@ -56,7 +65,7 @@ namespace TMPEffects.Tags
         }
     }
 
-    public sealed class EffectTagIndices : IEffectTagIndices
+    public sealed class EffectTagIndices
     {
         public int StartIndex => startIndex;
         public int EndIndex => endIndex;
@@ -71,32 +80,17 @@ namespace TMPEffects.Tags
 
         public EffectTagIndices(int startIndex, int endIndex, int orderAtIndex)
         {
+            // TODO Make endindex = -1 representing open some constant or smth; also used ie in tagcollection and animator
+            if (startIndex < 0) throw new ArgumentOutOfRangeException(nameof(startIndex));
+            if (endIndex < -1) throw new ArgumentOutOfRangeException(nameof(endIndex));
+
             this.startIndex = startIndex;
             this.endIndex = endIndex;
             this.orderAtIndex = orderAtIndex;
         }
 
-        public int CompareTo(IEffectTagIndices other)=> CompareTo(other);
-
         internal void SetStartIndex(int newIndex) => startIndex = newIndex;
         internal void SetEndIndex(int newIndex) => endIndex = newIndex;
         internal void SetOrderAtIndex(int newIndex) => orderAtIndex = newIndex;
-    }
-
-    public interface IEffectTagIndices : IComparable<IEffectTagIndices>
-    {
-        public int StartIndex { get; }
-        public int EndIndex { get; }
-        public int OrderAtIndex { get; }
-
-        public bool IsOpen { get; }
-        public int Length { get; }
-
-        int IComparable<IEffectTagIndices>.CompareTo(IEffectTagIndices other)
-        {
-            int res = StartIndex.CompareTo(other.StartIndex);
-            if (res == 0) return OrderAtIndex.CompareTo(other.OrderAtIndex);
-            return res;
-        }
     }
 }
