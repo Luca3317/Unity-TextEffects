@@ -120,7 +120,6 @@ namespace TMPEffects.Tags
         }
     }
 
-
     public class TagManager<TKey, TCached> : ITagManager<TKey> where TKey : ITMPPrefixSupplier where TCached : ITagWrapper
     {
         ITagCollection union;
@@ -129,7 +128,7 @@ namespace TMPEffects.Tags
         private Dictionary<TKey, TagCollection> exposed;
         private Dictionary<char, TKey> prefixToKey;
 
-        public INotifyCollectionChanged AddKey(TKey key)
+        public TagCollection<TCached> AddKey(TKey key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (exposed.ContainsKey(key)) throw new ArgumentException(nameof(key));
