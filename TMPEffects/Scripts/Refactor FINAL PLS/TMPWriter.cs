@@ -984,8 +984,9 @@ namespace TMPEffects.Components
         public bool ExecuteInstantly => command.ExecuteInstantly;
         public bool ExecuteOnSkip => command.ExecuteOnSkip;
         public bool ExecuteRepeatable => command.ExecuteRepeatable;
+#if UNITY_EDITOR
         public bool ExecuteInPreview => command.ExecuteInPreview;
-
+#endif
         public void Trigger()
         {
             if (Triggered) return;
@@ -1015,8 +1016,9 @@ namespace TMPEffects.Components
         public bool ExecuteInstantly { get; }
         public bool ExecuteOnSkip { get; }
         public bool ExecuteRepeatable { get; }
+#if UNITY_EDITOR
         public bool ExecuteInPreview { get; }
-
+#endif
         public void Reset();
         public void Trigger();
     }
