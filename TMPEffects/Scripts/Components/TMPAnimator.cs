@@ -432,10 +432,11 @@ namespace TMPEffects.Components
         private void UpdateAnimations_Impl(float deltaTime)
         {
             if (sw == null) sw = new();
-            else if (count == 100000)
+            else if (count == 50000)
             {
-                Debug.Log("MEasurement aftert 100000 iterations: " + sw.Elapsed.TotalMilliseconds);
+                Debug.Log("MEasurement aftert 50000 iterations: " + sw.Elapsed.TotalMilliseconds);
             }
+            else if (count % 100 == 0) Debug.Log(count); 
             count++;
             sw.Start();
 
@@ -595,12 +596,12 @@ namespace TMPEffects.Components
 
                     case TMPAnimationType.Hide:
                         if (hide.Count == 0)
-                        {
+                        {  
                             Animate(defaultHide);
                             return;
                         }
                         cc = hide;
-                        break;
+                        break; 
                 }
 
                 if (animationsOverride)
